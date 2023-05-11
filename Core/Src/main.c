@@ -242,7 +242,7 @@ int main(void)
   TIM1->CCR1 = 2048;
   TIM1->CCR2 = 2048;
   TIM1->CCR3 = 2048;
-  TIM1->CCR4 = 1048;
+  TIM1->CCR4 = 2048;
 //
 //  TIM2->CCR1 = 2048;
 //  TIM2->CCR2 = 2048;
@@ -262,7 +262,35 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1) {
 
-		//new line
+		switch (state)
+		{
+		case 0:
+			if (0 != stopButtom) state = 1;
+
+		case 1:
+			Inverter1(3);
+			Inverter2(1);
+			Inverter3(2);
+			Inverter4(1);
+
+
+
+			break;
+
+		case 2:
+
+			break;
+
+		case 3:
+
+			break;
+		case 4:
+
+			break;
+
+
+		}
+
 //		Module1_2inv();
 //		Module2_2inv();
 
@@ -274,6 +302,11 @@ int main(void)
 		*/
 
 		time = HAL_GetTick();
+//		Inverter1(4);
+//		Inverter2(1);
+//		Inverter3(4);
+//		Inverter4(1);
+
 		Inverter1(4);
 		Inverter2(4);
 		Inverter3(4);
@@ -316,6 +349,7 @@ int main(void)
 			Inverter2(1);
 			Inverter3(3);
 		}
+
 
 		*/
 //		else if (time < 40000) {
