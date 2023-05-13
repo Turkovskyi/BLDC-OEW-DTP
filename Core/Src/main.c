@@ -102,9 +102,13 @@ TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim8;
 
 /* USER CODE BEGIN PV */
+
+
 uint16_t PWM = 2048;
 
-volatile uint16_t PWM1 = 350;
+
+
+volatile uint16_t PWM1 = 0;
 uint16_t PWM2 = 0;
 uint16_t PWM3 = 0;
 uint16_t PWM4 = 0;
@@ -239,10 +243,15 @@ int main(void)
   HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
 
 
-  TIM1->CCR1 = 2048;
-  TIM1->CCR2 = 2048;
-  TIM1->CCR3 = 2048;
-  TIM1->CCR4 = 1048;
+  PWM1 = 0;
+  PWM2 = 0;
+  PWM3 = 0;
+  PWM4 = 0;
+
+//  TIM1->CCR1 = 2048;
+//  TIM1->CCR2 = 2048;
+//  TIM1->CCR3 = 2048;
+//  TIM1->CCR4 = 1048;
 //
 //  TIM2->CCR1 = 2048;
 //  TIM2->CCR2 = 2048;
@@ -253,8 +262,12 @@ int main(void)
 //  TIM8->CCR2 = 2048;
 //  TIM8->CCR3 = 2048;
 //  TIM8->CCR4 = 2048;
-  uint32_t timer = 100;
+  uint32_t timer;
   uint32_t time;
+
+  uint8_t currentState = 0;
+  uint32_t stateOffTime[20];
+//  uint32_t timer1;
 
   /* USER CODE END 2 */
 
@@ -274,10 +287,195 @@ int main(void)
 		*/
 
 		time = HAL_GetTick();
+
+		switch (currentState)
+		{
+		case 0:
+			Inverter1(1);
+			Inverter2(1);
+			Inverter3(1);
+			Inverter4(1);
+			if (time >= 2000)
+			{
+				stateOffTime[0] = time;
+				currentState = 1;
+
+			}
+
+
+			break;
+		case 1:
+			if (time >= timer)
+			{
+				timer = time + 20;
+				PWM1 += 10;
+				PWM2 += 10;
+			}
+
+			if (PWM1 > 4095)
+			{
+				PWM1 = 4095;
+				PWM2 = 4095;
+				currentState = 2;
+				stateOffTime[1] = time;
+			}
+//			PWM1 = 2000;
+//			PWM2 = 2000;
+
+			Inverter1(3);
+			Inverter2(3);
+			Inverter3(2);
+			Inverter4(2);
+			break;
+
+		case 2:
+
+			if ((time -stateOffTime[1]) >=4000)
+			{
+				currentState = 3;
+				stateOffTime[2] = time;
+			}
+
+			Inverter1(4);
+			Inverter2(1);
+			Inverter3(2);
+			Inverter4(1);
+			break;
+
+		case 3:
+			if (time >= timer)
+			{
+				timer = time + 20;
+				PWM3 += 10;
+				PWM4 += 10;
+			}
+
+			if (PWM3 > 4095)
+			{
+				PWM3 = 4095;
+				PWM4 = 4095;
+				currentState = 4;
+				stateOffTime[3] = time;
+			}
+//			PWM1 = 2000;
+//			PWM2 = 2000;
+
+			Inverter1(4);
+			Inverter2(4);
+			Inverter3(3);
+			Inverter4(3);
+			break;
+
+		case 4:
+		if ((time -stateOffTime[3]) >=4000)
+		{
+			currentState = 5;
+			stateOffTime[2] = time;
+		}
+
 		Inverter1(4);
-		Inverter2(4);
+		Inverter2(1);
 		Inverter3(4);
-		Inverter4(4);
+		Inverter4(1);
+		break;
+
+		case 5:
+			if (time >= timer)
+			{
+				timer = time + 20;
+				PWM3 -= 10;
+				PWM4 -= 10;
+			}
+
+			if (PWM3 < 10)
+			{
+				PWM3 = 0;
+				PWM4 = 0;
+				currentState = 6;
+				stateOffTime[5] = time;
+			}
+//			PWM1 = 2000;
+//			PWM2 = 2000;
+
+			Inverter1(4);
+			Inverter2(4);
+			Inverter3(3);
+			Inverter4(3);
+			break;
+
+		case 6:
+			if ((time -stateOffTime[5]) >=4000)
+			{
+				currentState = 7;
+				stateOffTime[6] = time;
+			}
+
+			Inverter1(4);
+			Inverter2(1);
+			Inverter3(2);
+			Inverter4(1);
+			break;
+
+		case 7:
+			if (time >= timer)
+			{
+				timer = time + 20;
+				PWM1 = PWM1 - 10;
+				PWM2 -= 10;
+			}
+
+			if (PWM1 < 10)
+			{
+				PWM1 = 0;
+				PWM2 = 0;
+				currentState = 8;
+				stateOffTime[7] = time;
+			}
+
+			Inverter1(3);
+			Inverter2(3);
+			Inverter3(2);
+			Inverter4(2);
+			break;
+
+		case 8:
+			Inverter1(1);
+			Inverter2(1);
+			Inverter3(1);
+			Inverter4(1);
+
+
+
+
+
+//		case 3:
+//			if (time >= timer)
+//			{
+//				timer = time + 20;
+//				PWM1 = PWM1 - 10;
+//				PWM2 -= 10;
+//			}
+//
+//			if (PWM1 < 20)
+//			{
+//				PWM1 = 0;
+//				PWM2 = 0;
+//				currentState = 0;
+//				state3OffTime = time;
+//			}
+////			PWM1 = 2000;
+////			PWM2 = 2000;
+//
+//			Inverter1(3);
+//			Inverter2(3);
+//			Inverter3(2);
+//			Inverter4(2);
+//			break;
+		}
+
+
+
+
 /*
 		if (time < 15000) {
 			Inverter1(3);
