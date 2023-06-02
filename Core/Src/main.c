@@ -21,7 +21,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "math.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -83,6 +83,15 @@
 #define		IN_B_4				TIM8->CCR4
 #define		IN_C_4				TIM2->CCR4
 
+// Define constants
+const int MAX_PWM_VALUE = 4095;
+const int PWM_INCREMENT = 25;
+const int PWM_DECREMENT = -25;
+const int STATE_0_DURATION = 1500;
+const int STATE_OFF_DURATION = 2500;
+const int TIMER_REPEAT = 20;
+
+
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
@@ -102,9 +111,13 @@ TIM_HandleTypeDef htim3;
 TIM_HandleTypeDef htim8;
 
 /* USER CODE BEGIN PV */
+
+
 uint16_t PWM = 2048;
 
-volatile uint16_t PWM1 = 350;
+
+
+volatile uint16_t PWM1 = 0;
 uint16_t PWM2 = 0;
 uint16_t PWM3 = 0;
 uint16_t PWM4 = 0;
@@ -171,6 +184,20 @@ void Inverter1(uint8_t);
 void Inverter2(uint8_t);
 void Inverter3(uint8_t);
 void Inverter4(uint8_t);
+
+
+// Define function to set inverter states
+void setInverterStates(int state1, int state2, int state3, int state4) {
+  Inverter1(state1);
+  Inverter2(state2);
+  Inverter3(state3);
+  Inverter4(state4);
+}
+
+// Define function to check if a certain amount of time has passed since a state transition
+uint8_t hasStateTransitionElapsed(int prevStateIndex, int currentTime, int stateOffTime[]) {
+  return (currentTime - stateOffTime[prevStateIndex]) >= STATE_OFF_DURATION;
+}
 
 /*
 InverterX(1) - all switches are off
@@ -239,10 +266,15 @@ int main(void)
   HAL_TIM_PWM_Start(&htim8, TIM_CHANNEL_4);
 
 
-  TIM1->CCR1 = 2048;
-  TIM1->CCR2 = 2048;
-  TIM1->CCR3 = 2048;
-  TIM1->CCR4 = 2048;
+  PWM1 = 0;
+  PWM2 = 0;
+  PWM3 = 0;
+  PWM4 = 0;
+
+//  TIM1->CCR1 = 2048;
+//  TIM1->CCR2 = 2048;
+//  TIM1->CCR3 = 2048;
+//  TIM1->CCR4 = 1048;
 //
 //  TIM2->CCR1 = 2048;
 //  TIM2->CCR2 = 2048;
@@ -253,8 +285,12 @@ int main(void)
 //  TIM8->CCR2 = 2048;
 //  TIM8->CCR3 = 2048;
 //  TIM8->CCR4 = 2048;
-  uint32_t timer = 100;
+  uint32_t timer;
   uint32_t time;
+
+  uint8_t currentState = 0;
+  uint32_t stateOffTime[20] = {0};
+//  uint32_t timer1;
 
   /* USER CODE END 2 */
 
@@ -262,35 +298,7 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 	while (1) {
 
-		switch (state)
-		{
-		case 0:
-			if (0 != stopButtom) state = 1;
-
-		case 1:
-			Inverter1(3);
-			Inverter2(1);
-			Inverter3(2);
-			Inverter4(1);
-
-
-
-			break;
-
-		case 2:
-
-			break;
-
-		case 3:
-
-			break;
-		case 4:
-
-			break;
-
-
-		}
-
+		//new line
 //		Module1_2inv();
 //		Module2_2inv();
 
@@ -302,15 +310,158 @@ int main(void)
 		*/
 
 		time = HAL_GetTick();
-//		Inverter1(4);
-//		Inverter2(1);
-//		Inverter3(4);
-//		Inverter4(1);
 
-		Inverter1(4);
-		Inverter2(4);
-		Inverter3(4);
-		Inverter4(4);
+		switch (currentState)
+		{
+		case 0:
+
+		setInverterStates(1, 1, 1, 1);
+
+		if (time >= STATE_0_DURATION) {
+		stateOffTime[0] = time;
+		currentState = 1;
+		}
+		break;
+
+
+			break;
+		case 1:
+			if (time >= timer)
+			{
+				timer = time + TIMER_REPEAT;
+				PWM1 += PWM_INCREMENT;
+				PWM2 += PWM_INCREMENT;
+			}
+
+			if (PWM1 > MAX_PWM_VALUE)
+			{
+				PWM1 = MAX_PWM_VALUE;
+				PWM2 = MAX_PWM_VALUE;
+				currentState = 2;
+				stateOffTime[1] = time;
+			}
+			setInverterStates(3, 3, 2, 2);
+			break;
+
+		case 2:
+		      if (hasStateTransitionElapsed(1, time, stateOffTime))
+		      {
+				currentState = 3;
+				stateOffTime[2] = time;
+			}
+		      setInverterStates(4, 1, 2, 1);
+			break;
+
+		case 3:
+			if (time >= timer)
+			{
+				timer = time + TIMER_REPEAT;
+				PWM3 += PWM_INCREMENT;
+				PWM4 += PWM_INCREMENT;
+			}
+
+			if (PWM3 > MAX_PWM_VALUE) {
+				PWM3 = MAX_PWM_VALUE;
+				PWM4 = MAX_PWM_VALUE;
+				currentState = 4;
+				stateOffTime[3] = time;
+			}
+
+		      setInverterStates(4, 4, 3, 3);
+
+			break;
+
+		case 4:
+		  if (hasStateTransitionElapsed(3, time, stateOffTime))
+		{
+			currentState = 5;
+			stateOffTime[2] = time;
+		}
+
+	      setInverterStates(4, 1, 4, 1);
+		break;
+
+		case 5:
+			if (time >= timer)
+			{
+				timer = time + TIMER_REPEAT;
+				PWM3 += PWM_DECREMENT;
+				PWM4 += PWM_DECREMENT;
+			}
+
+			if (PWM3 < PWM_INCREMENT)
+			{
+				PWM3 = 0;
+				PWM4 = 0;
+				currentState = 6;
+				stateOffTime[5] = time;
+			}
+			setInverterStates(4, 1, 3, 1);
+			break;
+
+		case 6:
+			if (hasStateTransitionElapsed(5, time, stateOffTime))
+			{
+				currentState = 7;
+				stateOffTime[6] = time;
+			}
+			setInverterStates(4, 1, 2, 1);
+			break;
+
+		case 7:
+			if (time >= timer)
+			{
+				timer = time + 20;
+				PWM1 += PWM_DECREMENT;
+				PWM2 += PWM_DECREMENT;
+			}
+
+			if (PWM1 < 100)
+			{
+				PWM1 = 0;
+				PWM2 = 0;
+				currentState = 8;
+				stateOffTime[7] = time;
+			}
+			setInverterStates(3, 1, 2, 1);
+			break;
+
+		case 8:
+			setInverterStates(1, 1, 1, 1);
+
+
+
+
+
+
+//		case 3:
+//			if (time >= timer)
+//			{
+//				timer = time + 20;
+//				PWM1 = PWM1 - 10;
+//				PWM2 -= 10;
+//			}
+//
+//			if (PWM1 < 20)
+//			{
+//				PWM1 = 0;
+//				PWM2 = 0;
+//				currentState = 0;
+//				state3OffTime = time;
+//			}
+////			PWM1 = 2000;
+////			PWM2 = 2000;
+//
+//			Inverter1(3);
+//			Inverter2(3);
+//			Inverter3(2);
+//			Inverter4(2);
+//			break;
+		}
+
+
+
+
 /*
 		if (time < 15000) {
 			Inverter1(3);
@@ -349,7 +500,6 @@ int main(void)
 			Inverter2(1);
 			Inverter3(3);
 		}
-
 
 		*/
 //		else if (time < 40000) {
