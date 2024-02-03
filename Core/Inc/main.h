@@ -110,6 +110,7 @@ void Error_Handler(void);
 #define HS2_GPIO_Port GPIOB
 #define HS3_Pin GPIO_PIN_6
 #define HS3_GPIO_Port GPIOB
+
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
